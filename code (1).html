@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Employee Dashboard - Clock In/Out & Schedule</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@600&display=swap');
+
+  :root {
+    --color-bg: #ffffff;
+    --color-text: #374151;
+    --color-text-muted: #6b7280;
+    --color-primary: #111827;
+    --color-accent: #2563eb;
+    --color-accent-hover: #1e40af;
+    --radius: 0.75rem;
+    --shadow-light: rgba(0, 0, 0, 0.05);
+    --shadow-medium: rgba(0, 0, 0, 0.1);
+    --transition-speed: 0.3s;
+  }
+
+  *, *::before, *::after {
+    box-sizing: border-box;
+  }
+
+  body {
+    margin: 0;
+    font-family: 'Poppins', sans-serif;
+    background: var(--color-bg);
+    color: var(--color-text-muted);
+    line-height: 1.6;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  header {
+    position: sticky;
+    top: 0;
+    background: var(--color-bg);
+    box-shadow: 0 1px 3px var(--shadow-light);
+    padding: 1rem 2rem;
+    display: flex;
+    align-items: center;
+    z-index: 100;
+  }
+
+  header .logo {
+    font-weight: 700;
+    font-size: 1.75rem;
+    color: var(--color-primary);
+    user-select: none;
+  }
+
+  main {
+    flex: 1;
+    max-width: 1200px;
+    margin: 3rem auto 4rem auto;
+    padding: 0 2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 3rem;
+  }
+
+  h1 {
+    font-weight: 700;
+    font-size: 3.5rem;
+    color: var(--color-primary);
+    margin: 0 0 0.25rem 0;
+    line-height: 1.1;
+  }
+
+  p.subtitle {
+    font-size: 1.125rem;
+    color: var(--color-text-muted);
+    margin: 0 0 1.5rem 0;
+    max-width: 600px;
+  }
+
+  /* Card style */
+  .card {
+    background: #f9fafb;
+    border-radius: var(--radius);
+    box-shadow: 0 6px 12px var(--shadow-medium);
+    padding: 2rem 2.5rem;
+  }
+
+  /* Clock controls */
+  .clock-status {
+    font-weight: 600;
+    font-size: 1.5rem;
+    color: var(--color-primary);
+    text-align: center;
+    margin-bottom: 0.5rem;
+  }
+
+  .clock-timestamp {
+    font-weight: 400;
+    font-size: 1rem;
+    color: var(--color-text-muted);
+    text-align: center;
+    margin-bottom: 1.8rem;
+  }
+
+  .buttons {
+    display: flex;
+    justify-content: center;
+    gap: 1.25rem;
+    flex-wrap: wrap;
+  }
+
+  button {
+    background-color: var(--color-accent);
+    color: white;
+    border: none;
+    border-radius: var(--radius);
+    padding: 0.85rem 2rem;
+    font-size: 1.125rem;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 5px 8px var(--shadow-light);
+    transition: background-color var(--transition-speed), transform var(--transition-speed);
+    user-select: none;
+    min-width: 140px;
+    flex: 1 1 auto;
+    max-width: 180px;
+  }
+
+  button:focus-visible {
+    outline: 3px solid var(--color-primary);
+    outline-offset: 2px;
+  }
+
+  button:hover:not(:disabled) {
+    background-color: var(--color-accent-hover);
+    transform: scale(1.05);
+  }
+
+  button:disabled {
+    background-color: #9ca3af;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  /* Schedule Table */
+  .schedule-title {
+    font-weight: 700;
+    font-size: 2rem;
+    color: var(--color-primary);
+    margin-bottom: 1rem;
+  }
+
+  table.schedule-table {
+    width: 100%;
+    border-collapse: collapse;
+    color: var(--color-text-muted);
+  }
+
+  th, td {
+    text-align: left;
+    padding: 0.8rem 1rem;
+    font-weight: 500;
+  }
+
+  th {
+    color: var(--color-primary);
+    font-weight: 700;
+  }
+
+  tbody tr {
+    background-color: white;
+    border-radius: var(--radius);
+    box-shadow: 0 1px 3px var(--shadow-light);
+  }
+
+  tbody tr:not(:last-child) {
+    border-bottom: 1px solid #e5e7eb;
+  }
+
+  /* Additional styling for remarks column */
+  td.remarks {
+    font-style: italic;
+    color: #d97706; /* amber-600 */
+  }
+
+  @media (max-width: 600px) {
+    h1 {
+      font-size: 2.5rem;
+    }
+    .buttons {
+      flex-direction: column;
+      align-items: stretch;
+    }
+    button {
+      max-width: 100%;
+    }
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="logo" aria-label="TimeTrack Logo">TimeTrack</div>
+</header>
+
+<main role="main" aria-label="Dashboard">
+  <section aria-labelledby="dashboard-title">
+    <h1 id="dashboard-title">Employee Dashboard</h1>
+    <p class="subtitle">Quickly clock in/out or manage your breaks and see your weekly schedule.</p>
+  </section>
+
+  <section class="card" aria-label="Clock In/Out Controls">
+    <div id="clock-status" class="clock-status" aria-live="polite" aria-atomic="true">You are currently <strong>Clocked Out</strong>.</div>
+    <div id="clock-time" class="clock-timestamp">Last action time: -</div>
+    <div class="buttons">
+      <button id="clock-in-btn" type="button">Clock In</button>
+      <button id="clock-out-btn" type="button" disabled>Clock Out</button>
+      <button id="break-out-btn" type="button" disabled>Break Out</button>
+      <button id="break-in-btn" type="button" disabled>Break In</button>
+    </div>
+  </section>
+
+  <section class="card" aria-label="Weekly Work Schedule">
+    <h2 class="schedule-title">Weekly Schedule</h2>
+    <table class="schedule-table" aria-describedby="schedule-desc">
+      <thead>
+        <tr>
+          <th scope="col">Day</th>
+          <th scope="col">Working Hours</th>
+          <th scope="col">Remarks</th>
+        </tr>
+      </thead>
+      <tbody id="schedule-body">
+        <!-- Schedule rows inserted by JS -->
+      </tbody>
+    </table>
+    <p id="schedule-desc" class="clock-timestamp" style="margin-top:1rem;">
+      Your scheduled work hours for the week with remarks like leave or undertime.
+    </p>
+  </section>
+</main>
+
+<script>
+  (function(){
+    const clockInBtn = document.getElementById('clock-in-btn');
+    const clockOutBtn = document.getElementById('clock-out-btn');
+    const breakOutBtn = document.getElementById('break-out-btn');
+    const breakInBtn = document.getElementById('break-in-btn');
+
+    const clockStatus = document.getElementById('clock-status');
+    const clockTime = document.getElementById('clock-time');
+    const scheduleBody = document.getElementById('schedule-body');
+
+    // Local storage key for persistent state
+    const STORAGE_KEY = 'dashboardClockState';
+
+    // Possible states: 'out' (default), 'in', 'break'
+    let stateData = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {
+      status: 'out',
+      lastActionTime: null
+    };
+
+    // Sample weekly schedule data including remarks
+    const weeklySchedule = [
+      { day: 'Monday', hours: '9:00 AM - 5:00 PM', remarks: '' },
+      { day: 'Tuesday', hours: '9:00 AM - 5:00 PM', remarks: 'On Leave' },
+      { day: 'Wednesday', hours: '9:00 AM - 5:00 PM', remarks: '' },
+      { day: 'Thursday', hours: '9:00 AM - 5:00 PM', remarks: 'Undertime' },
+      { day: 'Friday', hours: '9:00 AM - 5:00 PM', remarks: '' },
+      { day: 'Saturday', hours: 'Off', remarks: '' },
+      { day: 'Sunday', hours: 'Off', remarks: '' }
+    ];
+
+    function formatTime(date) {
+      return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
+
+    function updateUI() {
+      const { status, lastActionTime } = stateData;
+      let lastTimeText = lastActionTime ? formatTime(new Date(lastActionTime)) : '-';
+
+      switch (status) {
+        case 'in':
+          clockStatus.innerHTML = 'You are currently <strong>Clocked In</strong>.';
+          clockInBtn.disabled = true;
+          clockOutBtn.disabled = false;
+          breakOutBtn.disabled = false;
+          breakInBtn.disabled = true;
+          break;
+        case 'break':
+          clockStatus.innerHTML = 'You are currently <strong>On Break</strong>.';
+          clockInBtn.disabled = true;
+          clockOutBtn.disabled = false;
+          breakOutBtn.disabled = true;
+          breakInBtn.disabled = false;
+          break;
+        case 'out':
+        default:
+          clockStatus.innerHTML = 'You are currently <strong>Clocked Out</strong>.';
+          clockInBtn.disabled = false;
+          clockOutBtn.disabled = true;
+          breakOutBtn.disabled = true;
+          breakInBtn.disabled = true;
+          break;
+      }
+      clockTime.textContent = 'Last action time: ' + lastTimeText;
+    }
+
+    function saveState() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(stateData));
+    }
+
+    clockInBtn.addEventListener('click', () => {
+      stateData.status = 'in';
+      stateData.lastActionTime = new Date().toISOString();
+      saveState();
+      updateUI();
+    });
+
+    clockOutBtn.addEventListener('click', () => {
+      stateData.status = 'out';
+      stateData.lastActionTime = new Date().toISOString();
+      saveState();
+      updateUI();
+    });
+
+    breakOutBtn.addEventListener('click', () => {
+      stateData.status = 'break';
+      stateData.lastActionTime = new Date().toISOString();
+      saveState();
+      updateUI();
+    });
+
+    breakInBtn.addEventListener('click', () => {
+      stateData.status = 'in';
+      stateData.lastActionTime = new Date().toISOString();
+      saveState();
+      updateUI();
+    });
+
+    // Render schedule with remarks
+    function renderSchedule() {
+      scheduleBody.innerHTML = '';
+      weeklySchedule.forEach(({day, hours, remarks}) => {
+        const tr = document.createElement('tr');
+        const dayTd = document.createElement('td');
+        dayTd.textContent = day;
+        dayTd.setAttribute('scope', 'row');
+        const hoursTd = document.createElement('td');
+        hoursTd.textContent = hours;
+        const remarksTd = document.createElement('td');
+        remarksTd.classList.add('remarks');
+        remarksTd.textContent = remarks || '';
+        tr.appendChild(dayTd);
+        tr.appendChild(hoursTd);
+        tr.appendChild(remarksTd);
+        scheduleBody.appendChild(tr);
+      });
+    }
+
+    // Initial render
+    renderSchedule();
+    updateUI();
+  })();
+</script>
+</body>
+</html>
+
